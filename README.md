@@ -111,12 +111,7 @@ eas build -p android --profile production
 | `assets/adaptive-icon.png` | 1024×1024 | Adaptive icon Android (com margem para não ser cortado) |
 | `assets/splash-icon.png` | 1024×1024 | Ecrã de splash |
 
----
 
-## Modelo de negócio
-
-- **Preço de venda:** 499 MT (pagamento único)
-- **Distribuição:** APK directo (WhatsApp, Telegram) ou Google Play Store
 
 ---
 
