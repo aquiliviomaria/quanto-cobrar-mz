@@ -39,16 +39,6 @@ O **Quanto Cobrar MZ** resolve um problema real: pequenos negócios que cobram "
 
 ---
 
-## Ícones da app
-
-| Ficheiro | Tamanho | Uso |
-|---|---|---|
-| `assets/icon.png` | 1024×1024 | Ícone principal (iOS + Android) |
-| `assets/adaptive-icon.png` | 1024×1024 | Adaptive icon Android (com margem para não ser cortado) |
-| `assets/splash-icon.png` | 1024×1024 | Ecrã de splash |
-
----
-
 ## Desenvolvido por
 
 **Ku_kulaDevz**
