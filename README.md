@@ -2,7 +2,7 @@
 
 **Saiba quanto cobrar. Venda sem prejuízo.**
 
-Aplicação mobile Android para precificação inteligente de produtos e serviços, desenvolvida para pequenos empreendedores em Moçambique.
+Aplicação mobile Android & IOS para precificação inteligente de produtos e serviços, desenvolvida para pequenos empreendedores em Moçambique.
 
 ---
 
