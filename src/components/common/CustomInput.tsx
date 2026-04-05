@@ -5,12 +5,16 @@ import { colors } from '../../theme';
 interface Props extends TextInputProps {
   label: string;
   error?: string;
+  required?: boolean;
 }
 
-export function CustomInput({ label, error, style, ...props }: Props) {
+export function CustomInput({ label, error, required, style, ...props }: Props) {
   return (
     <View style={styles.container}>
-      <Text style={styles.label}>{label}</Text>
+      <View style={styles.labelRow}>
+        <Text style={styles.label}>{label}</Text>
+        {required && <Text style={styles.asterisco}>*</Text>}
+      </View>
       <TextInput
         style={[styles.input, error ? styles.inputError : null, style]}
         placeholderTextColor={colors.textSecondary}
@@ -23,7 +27,9 @@ export function CustomInput({ label, error, style, ...props }: Props) {
 
 const styles = StyleSheet.create({
   container: { marginBottom: 14 },
-  label: { fontSize: 13, fontWeight: '500', color: colors.text, marginBottom: 6 },
+  labelRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 6, gap: 3 },
+  label: { fontSize: 13, fontWeight: '500', color: colors.text },
+  asterisco: { fontSize: 13, color: colors.error, fontWeight: '700', lineHeight: 16 },
   input: {
     backgroundColor: colors.inputBg,
     borderRadius: 10,

@@ -8,14 +8,15 @@ interface Props {
   options: readonly string[] | string[];
   onChange: (val: string) => void;
   error?: string;
+  required?: boolean;
 }
 
-export function SelectPicker({ label, value, options, onChange, error }: Props) {
+export function SelectPicker({ label, value, options, onChange, error, required }: Props) {
   const [open, setOpen] = useState(false);
 
   return (
     <View style={styles.container}>
-      <Text style={styles.label}>{label}</Text>
+      <Text style={styles.label}>{label}{required && <Text style={styles.asterisco}> *</Text>}</Text>
       <TouchableOpacity style={[styles.input, error ? styles.inputError : null]} onPress={() => setOpen(true)}>
         <Text style={value ? styles.valueText : styles.placeholder}>
           {value || 'Selecionar...'}
@@ -52,6 +53,7 @@ export function SelectPicker({ label, value, options, onChange, error }: Props) 
 const styles = StyleSheet.create({
   container: { marginBottom: 14 },
   label: { fontSize: 13, fontWeight: '500', color: colors.text, marginBottom: 6 },
+  asterisco: { color: colors.error, fontWeight: '700' },
   input: {
     backgroundColor: colors.inputBg,
     borderRadius: 10,

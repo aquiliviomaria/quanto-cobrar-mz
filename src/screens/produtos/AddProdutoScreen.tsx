@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { useForm, Controller } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -8,20 +9,22 @@ import { CustomInput } from '../../components/common/CustomInput';
 import { CustomButton } from '../../components/common/CustomButton';
 import { SelectPicker } from '../../components/common/SelectPicker';
 import { ScreenHeader } from '../../components/common/ScreenHeader';
+import { KeyboardScroll } from '../../components/common/KeyboardScroll';
+import { InsumoSelectorModal } from '../../components/produtos/InsumoSelectorModal';
 import { useProdutosStore } from '../../store/useProdutosStore';
 import { useInsumosStore } from '../../store/useInsumosStore';
 import { CATEGORIAS_PRODUTO } from '../../utils/constants';
 import { colors } from '../../theme';
+import { formatMT } from '../../utils/currency';
 import { ProdutoInsumo } from '../../types/produto.types';
+import { getProdutoById } from '../../services/produtos.service';
 
 const schema = z.object({
-  nome: z.string().min(1, 'Nome obrigatório'),
-  categoria: z.string().min(1, 'Categoria obrigatória'),
+  nome: z.string().min(1, 'Nome obrigatorio'),
+  categoria: z.string().min(1, 'Categoria obrigatoria'),
   descricao: z.string().optional(),
-  rendimento: z.string().min(1, 'Rendimento obrigatório'),
-  unidade_rendimento: z.string().min(1, 'Unidade obrigatória'),
   custo_extra: z.string(),
-  margem_padrao: z.string().min(1, 'Margem obrigatória'),
+  margem_padrao: z.string().min(1, 'Margem obrigatoria'),
 });
 
 type FormData = z.infer<typeof schema>;
@@ -31,65 +34,53 @@ export function AddProdutoScreen({ navigation, route }: any) {
   const { create, update } = useProdutosStore();
   const { insumos, load: loadInsumos } = useInsumosStore();
   const [insumosAdicionados, setInsumosAdicionados] = useState<ProdutoInsumo[]>([]);
+  const [modalVisible, setModalVisible] = useState(false);
 
   useEffect(() => {
     loadInsumos();
-    if (produto?.insumos) setInsumosAdicionados(produto.insumos);
+    // Ao editar, carrega os insumos do produto directamente da DB
+    if (produto?.id) {
+      getProdutoById(produto.id).then(p => {
+        if (p?.insumos && p.insumos.length > 0) {
+          // Calcula custo_calculado para cada insumo
+          const insumosComCusto = p.insumos.map(pi => ({
+            ...pi,
+            // Usa custo_calculado guardado na DB (correcto), fallback para cálculo simples
+            custo_calculado: pi.custo_calculado ?? (pi.quantidade_usada * (pi.custo_unitario ?? 0)),
+            unidade_usada: pi.unidade_usada ?? pi.insumo_unidade,
+          }));
+          setInsumosAdicionados(insumosComCusto as any);
+        }
+      });
+    }
   }, []);
 
-  const { control, handleSubmit, formState: { errors, isSubmitting } } = useForm<FormData>({
+  const { control, handleSubmit, watch, formState: { errors, isSubmitting } } = useForm<FormData>({
     resolver: zodResolver(schema),
     defaultValues: {
       nome: produto?.nome ?? '',
       categoria: produto?.categoria ?? '',
       descricao: produto?.descricao ?? '',
-      rendimento: produto?.rendimento?.toString() ?? '1',
-      unidade_rendimento: produto?.unidade_rendimento ?? 'unidade',
       custo_extra: produto?.custo_extra?.toString() ?? '0',
       margem_padrao: produto?.margem_padrao?.toString() ?? '30',
     },
   });
 
-  const addInsumo = () => {
-    if (insumos.length === 0) {
-      Alert.alert('Sem insumos', 'Adiciona insumos primeiro na secção de Insumos.');
-      return;
-    }
-    // Mostrar picker de insumos
-    Alert.alert(
-      'Adicionar insumo',
-      'Seleciona um insumo:',
-      insumos.slice(0, 8).map(i => ({
-        text: i.nome,
-        onPress: () => {
-          Alert.prompt(
-            `Quantidade de ${i.nome}`,
-            `Unidade: ${i.unidade}`,
-            (qtd) => {
-              if (qtd && parseFloat(qtd) > 0) {
-                setInsumosAdicionados(prev => {
-                  const exists = prev.find(p => p.insumo_id === i.id);
-                  if (exists) {
-                    return prev.map(p => p.insumo_id === i.id ? { ...p, quantidade_usada: parseFloat(qtd) } : p);
-                  }
-                  return [...prev, {
-                    produto_id: produto?.id ?? 0,
-                    insumo_id: i.id,
-                    quantidade_usada: parseFloat(qtd),
-                    insumo_nome: i.nome,
-                    insumo_unidade: i.unidade,
-                    custo_unitario: i.custo_unitario,
-                  }];
-                });
-              }
-            },
-            'plain-text',
-            '',
-            'numeric'
-          );
-        },
-      }))
-    );
+  const custo_extra = parseFloat(watch('custo_extra') || '0');
+
+  // Custo total: usa SEMPRE custo_calculado que vem do modal (já correcto)
+  const custoTotalInsumos = insumosAdicionados.reduce((acc, pi) => {
+    const custo = (pi as any).custo_calculado ?? 0;
+    return acc + custo;
+  }, 0);
+  const custoTotal = custoTotalInsumos + custo_extra;
+
+  const handleAddInsumo = (pi: ProdutoInsumo) => {
+    setInsumosAdicionados(prev => {
+      const exists = prev.find(p => p.insumo_id === pi.insumo_id);
+      if (exists) return prev.map(p => p.insumo_id === pi.insumo_id ? pi : p);
+      return [...prev, pi];
+    });
   };
 
   const removeInsumo = (insumo_id: number) => {
@@ -101,17 +92,14 @@ export function AddProdutoScreen({ navigation, route }: any) {
       nome: data.nome,
       categoria: data.categoria as any,
       descricao: data.descricao,
-      rendimento: parseFloat(data.rendimento),
-      unidade_rendimento: data.unidade_rendimento,
+      rendimento: 1, // fixo — custo já calculado por insumo
+      unidade_rendimento: 'unidade',
       custo_extra: parseFloat(data.custo_extra || '0'),
       margem_padrao: parseFloat(data.margem_padrao),
       insumos: insumosAdicionados,
     };
-    if (produto) {
-      await update(produto.id, input);
-    } else {
-      await create(input);
-    }
+    if (produto) await update(produto.id, input);
+    else await create(input);
     navigation.goBack();
   };
 
@@ -121,11 +109,12 @@ export function AddProdutoScreen({ navigation, route }: any) {
         title={produto ? 'Editar Produto' : 'Novo Produto'}
         onBack={() => navigation.goBack()}
       />
-      <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
+      <KeyboardScroll>
+
         <Controller control={control} name="nome"
           render={({ field: { onChange, value } }) => (
-            <CustomInput label="Nome do produto/serviço" value={value} onChangeText={onChange}
-              placeholder="Ex: Bolo de aniversário 2kg" error={errors.nome?.message} />
+            <CustomInput label="Nome do produto/servico" value={value} onChangeText={onChange}
+              placeholder="Ex: Bolo de aniversario 2kg" error={errors.nome?.message} />
           )}
         />
         <Controller control={control} name="categoria"
@@ -136,39 +125,19 @@ export function AddProdutoScreen({ navigation, route }: any) {
         />
         <Controller control={control} name="descricao"
           render={({ field: { onChange, value } }) => (
-            <CustomInput label="Descrição (opcional)" value={value ?? ''} onChangeText={onChange}
+            <CustomInput label="Descricao (opcional)" value={value ?? ''} onChangeText={onChange}
               placeholder="Detalhes do produto..." multiline numberOfLines={2} />
           )}
         />
-
-        <View style={styles.row}>
-          <View style={{ flex: 1 }}>
-            <Controller control={control} name="rendimento"
-              render={({ field: { onChange, value } }) => (
-                <CustomInput label="Rendimento" value={value} onChangeText={onChange}
-                  keyboardType="numeric" placeholder="Ex: 12" error={errors.rendimento?.message} />
-              )}
-            />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Controller control={control} name="unidade_rendimento"
-              render={({ field: { onChange, value } }) => (
-                <CustomInput label="Unidade" value={value} onChangeText={onChange}
-                  placeholder="unidade / kg" error={errors.unidade_rendimento?.message} />
-              )}
-            />
-          </View>
-        </View>
-
         <Controller control={control} name="custo_extra"
           render={({ field: { onChange, value } }) => (
             <CustomInput label="Custo extra fixo (MT)" value={value} onChangeText={onChange}
-              keyboardType="numeric" placeholder="Ex: 50 (embalagem, gás...)" />
+              keyboardType="numeric" placeholder="Ex: 50 (embalagem, gas...)" />
           )}
         />
         <Controller control={control} name="margem_padrao"
           render={({ field: { onChange, value } }) => (
-            <CustomInput label="Margem de lucro padrão (%)" value={value} onChangeText={onChange}
+            <CustomInput label="Margem de lucro padrao (%)" value={value} onChangeText={onChange}
               keyboardType="numeric" placeholder="Ex: 30" error={errors.margem_padrao?.message} />
           )}
         />
@@ -176,34 +145,73 @@ export function AddProdutoScreen({ navigation, route }: any) {
         {/* Insumos */}
         <View style={styles.insumosSection}>
           <View style={styles.insumosTitleRow}>
-            <Text style={styles.insumosTitle}>Insumos usados</Text>
-            <TouchableOpacity style={styles.addInsumoBtn} onPress={addInsumo}>
-              <Text style={styles.addInsumoBtnText}>+ Adicionar</Text>
+            <View style={styles.insumosTitleLeft}>
+              <Ionicons name="layers-outline" size={18} color={colors.primary} />
+              <Text style={styles.insumosTitle}>Ingredientes / Insumos</Text>
+            </View>
+            <TouchableOpacity style={styles.addInsumoBtn} onPress={() => setModalVisible(true)}>
+              <Ionicons name="add" size={16} color="#fff" />
+              <Text style={styles.addInsumoBtnText}>Adicionar</Text>
             </TouchableOpacity>
           </View>
-          {insumosAdicionados.length === 0
-            ? <Text style={styles.noInsumos}>Nenhum insumo adicionado</Text>
-            : insumosAdicionados.map(pi => (
-              <View key={pi.insumo_id} style={styles.insumoRow}>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.insumoNome}>{pi.insumo_nome}</Text>
-                  <Text style={styles.insumoQtd}>{pi.quantidade_usada} {pi.insumo_unidade}</Text>
-                </View>
-                <TouchableOpacity onPress={() => removeInsumo(pi.insumo_id)}>
-                  <Text style={{ fontSize: 18 }}>✕</Text>
-                </TouchableOpacity>
+
+          {insumosAdicionados.length === 0 ? (
+            <View style={styles.emptyInsumos}>
+              <Ionicons name="cube-outline" size={28} color={colors.border} />
+              <Text style={styles.noInsumos}>Nenhum ingrediente adicionado</Text>
+              <Text style={styles.noInsumosHint}>Toca em "Adicionar" para selecionar</Text>
+            </View>
+          ) : (
+            <>
+              {insumosAdicionados.map(pi => {
+                const custoItem = (pi as any).custo_calculado ?? 0;
+                // unidade_usada = unidade correcta após conversão (ex: ml)
+                // insumo_unidade = unidade de compra do insumo (ex: L) — só como fallback
+                const unidadeExibir = (pi as any).unidade_usada || pi.insumo_unidade;
+                return (
+                  <View key={pi.insumo_id} style={styles.insumoRow}>
+                    <View style={styles.insumoIconWrap}>
+                      <Ionicons name="cube-outline" size={16} color={colors.primary} />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.insumoNome}>{pi.insumo_nome}</Text>
+                      <Text style={styles.insumoQtd}>
+                        {pi.quantidade_usada} {unidadeExibir}
+                      </Text>
+                    </View>
+                    <View style={styles.insumoRight}>
+                      <Text style={styles.insumoCusto}>{formatMT(custoItem)}</Text>
+                      <TouchableOpacity style={styles.removeBtn} onPress={() => removeInsumo(pi.insumo_id)}>
+                        <Ionicons name="trash-outline" size={14} color={colors.error} />
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                );
+              })}
+
+              {/* Resumo */}
+              <View style={styles.custoResumo}>
+                <Text style={styles.custoResumoLabel}>Custo total estimado</Text>
+                <Text style={styles.custoResumoVal}>{formatMT(custoTotal)}</Text>
               </View>
-            ))
-          }
+            </>
+          )}
         </View>
 
         <CustomButton
-          title={produto ? 'Guardar alterações' : 'Criar produto'}
+          title={produto ? 'Guardar alteracoes' : 'Criar produto'}
           onPress={handleSubmit(onSubmit)}
           loading={isSubmitting}
           style={styles.btn}
         />
-      </ScrollView>
+      </KeyboardScroll>
+
+      <InsumoSelectorModal
+        visible={modalVisible}
+        insumos={insumos}
+        onClose={() => setModalVisible(false)}
+        onConfirm={handleAddInsumo}
+      />
     </SafeAreaView>
   );
 }
@@ -211,21 +219,42 @@ export function AddProdutoScreen({ navigation, route }: any) {
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background },
   scroll: { padding: 20 },
-  row: { flexDirection: 'row', gap: 12 },
   insumosSection: {
-    backgroundColor: colors.surface, borderRadius: 12, padding: 14,
+    backgroundColor: colors.surface, borderRadius: 14, padding: 14,
     marginBottom: 20, borderWidth: 1, borderColor: colors.border,
   },
-  insumosTitleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
+  insumosTitleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
+  insumosTitleLeft: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   insumosTitle: { fontSize: 14, fontWeight: '700', color: colors.text },
-  addInsumoBtn: { backgroundColor: colors.primary + '20', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8 },
-  addInsumoBtnText: { color: colors.primary, fontSize: 13, fontWeight: '600' },
-  noInsumos: { fontSize: 13, color: colors.textSecondary, textAlign: 'center', paddingVertical: 8 },
+  addInsumoBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 4,
+    backgroundColor: colors.primary, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 10,
+  },
+  addInsumoBtnText: { color: '#fff', fontSize: 13, fontWeight: '600' },
+  emptyInsumos: { alignItems: 'center', paddingVertical: 16, gap: 4 },
+  noInsumos: { fontSize: 13, color: colors.textSecondary, fontWeight: '500' },
+  noInsumosHint: { fontSize: 12, color: colors.border },
   insumoRow: {
-    flexDirection: 'row', alignItems: 'center', paddingVertical: 8,
-    borderTopWidth: 1, borderTopColor: colors.border,
+    flexDirection: 'row', alignItems: 'center', gap: 10,
+    paddingVertical: 10, borderTopWidth: 1, borderTopColor: colors.border,
+  },
+  insumoIconWrap: {
+    width: 32, height: 32, borderRadius: 8,
+    backgroundColor: colors.primary + '12', alignItems: 'center', justifyContent: 'center',
   },
   insumoNome: { fontSize: 14, fontWeight: '600', color: colors.text },
-  insumoQtd: { fontSize: 12, color: colors.textSecondary },
+  insumoQtd: { fontSize: 12, color: colors.textSecondary, marginTop: 1 },
+  insumoRight: { alignItems: 'flex-end', gap: 4 },
+  insumoCusto: { fontSize: 13, fontWeight: '700', color: colors.primaryDark },
+  removeBtn: {
+    width: 28, height: 28, borderRadius: 7,
+    backgroundColor: colors.error + '12', alignItems: 'center', justifyContent: 'center',
+  },
+  custoResumo: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    marginTop: 10, paddingTop: 10, borderTopWidth: 1.5, borderTopColor: colors.primary + '30',
+  },
+  custoResumoLabel: { fontSize: 13, color: colors.textSecondary },
+  custoResumoVal: { fontSize: 17, fontWeight: '800', color: colors.primary },
   btn: { marginTop: 8 },
 });

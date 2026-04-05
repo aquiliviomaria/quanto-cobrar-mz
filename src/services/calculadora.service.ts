@@ -7,9 +7,18 @@ export function calcularCustoProduto(
   custo_extra: number
 ): number {
   const custo_insumos = insumos.reduce((acc, pi) => {
+    const custoCalc = (pi as any).custo_calculado;
+    // Usa custo_calculado se for um valor positivo válido (guardado correctamente)
+    if (custoCalc && custoCalc > 0) {
+      return acc + custoCalc;
+    }
+    // Fallback: custo_unitario já está em MT por unidade de compra
+    // Se quantidade_usada está na mesma unidade, multiplica directamente
+    // Este fallback só é correcto se não houve conversão de unidades
     return acc + (pi.quantidade_usada * (pi.custo_unitario ?? 0));
   }, 0);
-  return (custo_insumos + custo_extra) / rendimento;
+  const rend = rendimento > 0 ? rendimento : 1;
+  return (custo_insumos + custo_extra) / rend;
 }
 
 export function calcularOrcamento(

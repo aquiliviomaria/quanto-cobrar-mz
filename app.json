@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "quanto-cobrar-mz",
+    "name": "Quanto Cobrar MZ",
     "slug": "quanto-cobrar-mz",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -9,22 +9,26 @@
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
-    },
-    "ios": {
-      "supportsTablet": true
+      "backgroundColor": "#EAF4FF"
     },
     "android": {
+      "package": "mz.quantocobrar.app",
+      "versionCode": 1,
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/android-icon-foreground.png",
-        "backgroundImage": "./assets/android-icon-background.png",
-        "monochromeImage": "./assets/android-icon-monochrome.png"
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#FFFFFF"
       },
-      "predictiveBackGestureEnabled": false
+      "allowBackup": false
     },
-    "web": {
-      "favicon": "./assets/favicon.png"
-    }
+    "ios": {
+      "bundleIdentifier": "mz.quantocobrar.app",
+      "buildNumber": "1"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "3762d2d8-ef91-41ab-a1b9-4eb130d16411"
+      }
+    },
+    "owner": "aquilivioparte"
   }
 }

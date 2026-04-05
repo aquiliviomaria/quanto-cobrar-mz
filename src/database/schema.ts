@@ -1,18 +1,31 @@
 export const CREATE_TABLES = `
+CREATE TABLE IF NOT EXISTS utilizadores (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  nome TEXT NOT NULL,
+  email TEXT NOT NULL UNIQUE,
+  senha TEXT NOT NULL,
+  telefone TEXT,
+  empresa TEXT,
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+
 CREATE TABLE IF NOT EXISTS insumos (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
+  utilizador_id INTEGER NOT NULL DEFAULT 1,
   nome TEXT NOT NULL,
   categoria TEXT NOT NULL,
   quantidade_comprada REAL NOT NULL,
   unidade TEXT NOT NULL,
   preco_total REAL NOT NULL,
   custo_unitario REAL NOT NULL,
+  tipo_ingrediente TEXT,
   created_at TEXT DEFAULT CURRENT_TIMESTAMP,
   updated_at TEXT DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS produtos (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
+  utilizador_id INTEGER NOT NULL DEFAULT 1,
   nome TEXT NOT NULL,
   categoria TEXT NOT NULL,
   descricao TEXT,
@@ -29,6 +42,8 @@ CREATE TABLE IF NOT EXISTS produto_insumos (
   produto_id INTEGER NOT NULL,
   insumo_id INTEGER NOT NULL,
   quantidade_usada REAL NOT NULL,
+  custo_calculado REAL NOT NULL DEFAULT 0,
+  unidade_usada TEXT,
   FOREIGN KEY (produto_id) REFERENCES produtos(id) ON DELETE CASCADE,
   FOREIGN KEY (insumo_id) REFERENCES insumos(id) ON DELETE CASCADE
 );
@@ -45,6 +60,7 @@ CREATE TABLE IF NOT EXISTS orcamentos (
   preco_arredondado REAL NOT NULL,
   status TEXT NOT NULL DEFAULT 'pendente',
   observacoes TEXT,
+  descricao_pedido TEXT,
   created_at TEXT DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (produto_id) REFERENCES produtos(id) ON DELETE CASCADE
 );

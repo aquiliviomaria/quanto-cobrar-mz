@@ -7,6 +7,8 @@ export interface ProdutoInsumo {
   produto_id: number;
   insumo_id: number;
   quantidade_usada: number;
+  custo_calculado?: number;
+  unidade_usada?: string;
   // campos extras para exibição
   insumo_nome?: string;
   insumo_unidade?: string;

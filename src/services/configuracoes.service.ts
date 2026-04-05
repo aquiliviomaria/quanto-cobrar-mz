@@ -16,12 +16,12 @@ export async function getConfiguracoes(): Promise<Configuracoes> {
 export async function updateConfiguracoes(config: Partial<Configuracoes>): Promise<void> {
   const db = await getDatabase();
   if (config.margem_padrao !== undefined) {
-    await db.runAsync('UPDATE configuracoes SET margem_padrao = ?, updated_at = CURRENT_TIMESTAMP WHERE id = 1', [config.margem_padrao]);
+    await db.runAsync('UPDATE configuracoes SET margem_padrao=?, updated_at=CURRENT_TIMESTAMP WHERE id=1', [config.margem_padrao]);
   }
   if (config.arredondamento_ativo !== undefined) {
-    await db.runAsync('UPDATE configuracoes SET arredondamento_ativo = ?, updated_at = CURRENT_TIMESTAMP WHERE id = 1', [config.arredondamento_ativo ? 1 : 0]);
+    await db.runAsync('UPDATE configuracoes SET arredondamento_ativo=?, updated_at=CURRENT_TIMESTAMP WHERE id=1', [config.arredondamento_ativo ? 1 : 0]);
   }
   if (config.tipo_arredondamento !== undefined) {
-    await db.runAsync('UPDATE configuracoes SET tipo_arredondamento = ?, updated_at = CURRENT_TIMESTAMP WHERE id = 1', [config.tipo_arredondamento]);
+    await db.runAsync('UPDATE configuracoes SET tipo_arredondamento=?, updated_at=CURRENT_TIMESTAMP WHERE id=1', [config.tipo_arredondamento]);
   }
 }

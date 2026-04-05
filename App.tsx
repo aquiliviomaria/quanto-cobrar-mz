@@ -1,38 +1,33 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AppNavigator } from './src/navigation/AppNavigator';
 import { SplashScreen } from './src/screens/onboarding/SplashScreen';
 import { useAppStore } from './src/store/useAppStore';
-import { getDatabase } from './src/database/db';
+import { initDatabase } from './src/database/db';
 
 export default function App() {
-  const [showSplash, setShowSplash] = useState(true);
+  const [splashDone, setSplashDone] = useState(false);
   const [dbReady, setDbReady] = useState(false);
   const loadConfiguracoes = useAppStore(s => s.loadConfiguracoes);
 
   useEffect(() => {
     async function init() {
-      await getDatabase();
+      await initDatabase();
       await loadConfiguracoes();
       setDbReady(true);
     }
     init();
   }, []);
 
-  if (showSplash || !dbReady) {
-    return (
-      <SafeAreaProvider>
-        <StatusBar style="light" />
-        <SplashScreen onFinish={() => setShowSplash(false)} />
-      </SafeAreaProvider>
-    );
-  }
+  // Só sai do splash quando AMBOS estiverem prontos
+  const ready = splashDone && dbReady;
 
   return (
     <SafeAreaProvider>
-      <StatusBar style="dark" />
-      <AppNavigator />
+      <StatusBar style={ready ? 'dark' : 'dark'} backgroundColor="#FFFFFF" />
+      {!ready && <SplashScreen onFinish={() => setSplashDone(true)} />}
+      {ready && <AppNavigator />}
     </SafeAreaProvider>
   );
 }

@@ -2,7 +2,7 @@ import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Text } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 
 import { HomeScreen } from '../screens/home/HomeScreen';
 import { InsumosListScreen } from '../screens/insumos/InsumosListScreen';
@@ -13,7 +13,11 @@ import { NovoOrcamentoScreen } from '../screens/orcamentos/NovoOrcamentoScreen';
 import { ResultadoOrcamentoScreen } from '../screens/orcamentos/ResultadoOrcamentoScreen';
 import { HistoricoOrcamentosScreen } from '../screens/orcamentos/HistoricoOrcamentosScreen';
 import { ConfigScreen } from '../screens/configuracoes/ConfigScreen';
+import { LoginScreen } from '../screens/auth/LoginScreen';
+import { RegistarScreen } from '../screens/auth/RegistarScreen';
 import { colors } from '../theme';
+import { useAuthStore } from '../store/useAuthStore';
+import { ConversorScreen } from '../screens/conversor/ConversorScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -25,47 +29,79 @@ function TabNavigator() {
         headerShown: false,
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.textSecondary,
-        tabBarStyle: { borderTopColor: colors.border, paddingBottom: 4 },
+        tabBarStyle: {
+          borderTopColor: colors.border,
+          paddingBottom: 8,
+          paddingTop: 6,
+          height: 64,
+        },
+        tabBarLabelStyle: { fontSize: 11, fontWeight: '600', marginTop: 2 },
       }}
     >
       <Tab.Screen
         name="Home"
         component={HomeScreen}
-        options={{ tabBarLabel: 'Início', tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>🏠</Text> }}
+        options={{
+          tabBarLabel: 'Início',
+          tabBarIcon: ({ color, size }) => <Ionicons name="home-outline" size={size} color={color} />,
+        }}
       />
       <Tab.Screen
         name="InsumosList"
         component={InsumosListScreen}
-        options={{ tabBarLabel: 'Insumos', tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>🛒</Text> }}
+        options={{
+          tabBarLabel: 'Insumos',
+          tabBarIcon: ({ color, size }) => <Ionicons name="layers-outline" size={size} color={color} />,
+        }}
       />
       <Tab.Screen
         name="ProdutosList"
         component={ProdutosListScreen}
-        options={{ tabBarLabel: 'Produtos', tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>🎂</Text> }}
+        options={{
+          tabBarLabel: 'Produtos',
+          tabBarIcon: ({ color, size }) => <Ionicons name="storefront-outline" size={size} color={color} />,
+        }}
       />
       <Tab.Screen
         name="Historico"
         component={HistoricoOrcamentosScreen}
-        options={{ tabBarLabel: 'Histórico', tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>📋</Text> }}
+        options={{
+          tabBarLabel: 'Histórico',
+          tabBarIcon: ({ color, size }) => <Ionicons name="receipt-outline" size={size} color={color} />,
+        }}
       />
       <Tab.Screen
         name="Config"
         component={ConfigScreen}
-        options={{ tabBarLabel: 'Config', tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>⚙️</Text> }}
+        options={{
+          tabBarLabel: 'Config',
+          tabBarIcon: ({ color, size }) => <Ionicons name="settings-outline" size={size} color={color} />,
+        }}
       />
     </Tab.Navigator>
   );
 }
 
 export function AppNavigator() {
+  const utilizador = useAuthStore(s => s.utilizador);
+
   return (
     <NavigationContainer>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="Main" component={TabNavigator} />
-        <Stack.Screen name="AddInsumo" component={AddInsumoScreen} />
-        <Stack.Screen name="AddProduto" component={AddProdutoScreen} />
-        <Stack.Screen name="NovoOrcamento" component={NovoOrcamentoScreen} />
-        <Stack.Screen name="ResultadoOrcamento" component={ResultadoOrcamentoScreen} />
+        {utilizador ? (
+          <>
+            <Stack.Screen name="Main" component={TabNavigator} />
+            <Stack.Screen name="AddInsumo" component={AddInsumoScreen} />
+            <Stack.Screen name="AddProduto" component={AddProdutoScreen} />
+            <Stack.Screen name="NovoOrcamento" component={NovoOrcamentoScreen} />
+            <Stack.Screen name="ResultadoOrcamento" component={ResultadoOrcamentoScreen} />
+          </>
+        ) : (
+          <>
+            <Stack.Screen name="Login" component={LoginScreen} />
+            <Stack.Screen name="Registar" component={RegistarScreen} />
+          </>
+        )}
       </Stack.Navigator>
     </NavigationContainer>
   );

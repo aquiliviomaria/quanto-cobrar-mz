@@ -13,6 +13,7 @@ export interface Orcamento {
   preco_arredondado: number;
   status: StatusOrcamento;
   observacoes?: string;
+  descricao_pedido?: string;
   created_at: string;
 }
 

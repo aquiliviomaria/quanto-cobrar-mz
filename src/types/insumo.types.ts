@@ -14,6 +14,7 @@ export interface Insumo {
   unidade: UnidadeInsumo;
   preco_total: number;
   custo_unitario: number;
+  tipo_ingrediente?: string;
   created_at: string;
   updated_at: string;
 }
